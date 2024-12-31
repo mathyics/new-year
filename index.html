@@ -8,15 +8,18 @@
         :root {
             --primary-color: #2c3e50;
             --accent-color: #e74c3c;
-            --text-color: #333;
-            --card-bg: #fff;
             --gradient-start: #3498db;
             --gradient-end: #2ecc71;
         }
 
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            margin: 0;
             min-height: 100vh;
             background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
             display: flex;
@@ -71,14 +74,8 @@
 
         .card h1 {
             font-size: 2.5em;
-            margin: 0 0 15px 0;
+            margin-bottom: 15px;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
-        }
-
-        .card p {
-            font-size: 1.2em;
-            margin: 0;
-            line-height: 1.5;
         }
 
         .form-group {
@@ -93,7 +90,6 @@
             border-radius: 10px;
             font-size: 16px;
             transition: all 0.3s ease;
-            box-sizing: border-box;
         }
 
         textarea:focus, input:focus {
@@ -120,7 +116,6 @@
             text-transform: uppercase;
             letter-spacing: 1px;
             font-weight: bold;
-            margin: 10px 0;
         }
 
         .glow-button:hover {
@@ -194,36 +189,18 @@
         }
 
         @media (max-width: 768px) {
-            .container {
-                padding: 20px;
-            }
-
-            .glow-button {
-                padding: 12px 20px;
-                font-size: 14px;
-            }
-
-            .card h1 {
-                font-size: 2em;
-            }
-
-            .card p {
-                font-size: 1em;
-            }
-
-            .message-content {
-                padding: 20px;
-            }
+            .container { padding: 20px; }
+            .card h1 { font-size: 2em; }
+            .glow-button { padding: 12px 20px; font-size: 14px; }
+            .message-content { padding: 20px; }
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="card" id="card">
-            <div class="card-inner">
-                <h1>Happy New Year!</h1>
-                <p id="customMessage">Your encrypted message will appear here</p>
-            </div>
+            <h1>Happy New Year!</h1>
+            <p id="customMessage">Your encrypted message will appear here</p>
         </div>
         <div class="form-group">
             <textarea id="messageInput" placeholder="Enter your New Year's message"></textarea>
@@ -235,7 +212,6 @@
             <input type="password" id="decryptPassword" placeholder="Enter password to decrypt">
             <button onclick="decryptMessage()" class="glow-button">Decrypt Message</button>
         </div>
-        <div id="decryptedMessage"></div>
     </div>
 
     <div class="fireworks-container" id="fireworks"></div>
@@ -248,7 +224,27 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
     <script>
-        // Fireworks Class
+        // Encryption utility class
+        class MessageEncryption {
+            static encrypt(message, key) {
+                if (!message || !key) throw new Error('Message and key are required');
+                return CryptoJS.AES.encrypt(message, key).toString();
+            }
+
+            static decrypt(encryptedMessage, key) {
+                if (!encryptedMessage || !key) throw new Error('Encrypted message and key are required');
+                try {
+                    const bytes = CryptoJS.AES.decrypt(encryptedMessage, key);
+                    const decrypted = bytes.toString(CryptoJS.enc.Utf8);
+                    if (!decrypted) throw new Error('Decryption failed');
+                    return decrypted;
+                } catch (error) {
+                    throw new Error('Invalid password');
+                }
+            }
+        }
+
+        // Fireworks animation class
         class Firework {
             constructor(container) {
                 this.container = container;
@@ -296,93 +292,79 @@
             }
         }
 
-        // Encryption Class
-        class MessageEncryption {
-            static encrypt(message, key) {
-                return CryptoJS.AES.encrypt(message, key).toString();
+        // Main application logic
+        document.addEventListener('DOMContentLoaded', () => {
+            const fireworksContainer = document.getElementById('fireworks');
+            const fireworks = new Firework(fireworksContainer);
+            const messageInput = document.getElementById('messageInput');
+            const password = document.getElementById('password');
+            const shareLinkDiv = document.getElementById('shareLink');
+            const decryptPassword = document.getElementById('decryptPassword');
+            const customMessage = document.getElementById('customMessage');
+
+            function showDecryptedMessage(message) {
+                const overlay = document.getElementById('messageOverlay');
+                const overlayMessage = document.getElementById('overlayMessage');
+                
+                overlayMessage.textContent = message;
+                overlay.style.display = 'flex';
+                
+                const fireworksInterval = setInterval(() => {
+                    fireworks.launch();
+                }, 300);
+
+                setTimeout(() => {
+                    clearInterval(fireworksInterval);
+                    overlay.style.display = 'none';
+                    customMessage.textContent = message;
+                }, 5000);
             }
 
-            static decrypt(encryptedMessage, key) {
+            window.encryptAndShare = function() {
                 try {
-                    const decrypted = CryptoJS.AES.decrypt(encryptedMessage, key).toString(CryptoJS.enc.Utf8);
-                    if (!decrypted) {
-                        throw new Error('Decryption failed');
+                    const message = messageInput.value;
+                    const key = password.value;
+                    
+                    if (!message || !key) {
+                        alert('Please enter both a message and a password.');
+                        return;
                     }
-                    return decrypted;
+                    
+                    const encrypted = MessageEncryption.encrypt(message, key);
+                    const shareUrl = `${window.location.href.split('?')[0]}?msg=${encodeURIComponent(encrypted)}`;
+                    shareLinkDiv.textContent = `Share this link: ${shareUrl}`;
+                    shareLinkDiv.style.display = 'block';
+                    customMessage.textContent = 'Message encrypted and ready to share!';
                 } catch (error) {
-                    throw new Error('Invalid password');
+                    alert(error.message);
                 }
-            }
-        }
+            };
 
-        // Main Application Logic
-        const fireworksContainer = document.getElementById('fireworks');
-        const fireworks = new Firework(fireworksContainer);
+            window.decryptMessage = function() {
+                try {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const encryptedMsg = urlParams.get('msg');
+                    const key = decryptPassword.value;
+                    
+                    if (!encryptedMsg || !key) {
+                        alert('No encrypted message found or no password entered.');
+                        return;
+                    }
+                    
+                    const decrypted = MessageEncryption.decrypt(encryptedMsg, key);
+                    showDecryptedMessage(decrypted);
+                } catch (error) {
+                    alert(error.message);
+                }
+            };
 
-        function showDecryptedMessage(message) {
-            const overlay = document.getElementById('messageOverlay');
-            const overlayMessage = document.getElementById('overlayMessage');
-            
-            overlayMessage.textContent = message;
-            overlay.style.display = 'flex';
-            
-            const fireworksInterval = setInterval(() => {
-                fireworks.launch();
-            }, 300);
-
-            setTimeout(() => {
-                clearInterval(fireworksInterval);
-                overlay.style.display = 'none';
-                customMessage.textContent = message;
-            }, 5000);
-        }
-
-        function encryptAndShare() {
-            const message = messageInput.value;
-            const key = password.value;
-            
-            if (!message || !key) {
-                alert('Please enter both a message and a password.');
-                return;
-            }
-            
-            try {
-                const encrypted = MessageEncryption.encrypt(message, key);
-                const shareUrl = `${window.location.href.split('?')[0]}?msg=${encodeURIComponent(encrypted)}`;
-                shareLinkDiv.textContent = `Share this link: ${shareUrl}`;
-                shareLinkDiv.style.display = 'block';
-                customMessage.textContent = 'Message encrypted and ready to share!';
-            } catch (error) {
-                alert('Encryption failed. Please try again.');
-            }
-        }
-
-        function decryptMessage() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const encryptedMsg = urlParams.get('msg');
-            const key = decryptPassword.value;
-            
-            if (!encryptedMsg || !key) {
-                alert('No encrypted message found or no password entered.');
-                return;
-            }
-            
-            try {
-                const decrypted = MessageEncryption.decrypt(encryptedMsg, key);
-                showDecryptedMessage(decrypted);
-            } catch (error) {
-                alert(error.message);
-            }
-        }
-
-        // Check for encrypted message in URL
-        window.onload = function() {
+            // Check for encrypted message in URL
             const urlParams = new URLSearchParams(window.location.search);
             const encryptedMsg = urlParams.get('msg');
             if (encryptedMsg) {
                 customMessage.textContent = 'Encrypted message received. Enter password to decrypt.';
             }
-        };
+        });
     </script>
 </body>
 </html>
