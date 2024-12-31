@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure New Year Greeting Card</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        .container {
+            text-align: center;
+            padding: 20px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            max-width: 400px;
+            width: 100%;
+        }
+        .card {
+            width: 100%;
+            height: 200px;
+            margin: 20px auto;
+            background-color: #ff6b6b;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+        .card:hover {
+            transform: scale(1.05);
+        }
+        textarea, input {
+            width: 100%;
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+        }
+        textarea {
+            height: 100px;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #shareLink, #decryptedMessage {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #f8f8f8;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            word-break: break-all;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card" id="card">
+            <h1>Happy New Year!</h1>
+            <p id="customMessage">Your encrypted message will appear here</p>
+        </div>
+        <textarea id="messageInput" placeholder="Enter your New Year's message"></textarea>
+        <input type="password" id="password" placeholder="Enter a password for encryption">
+        <button onclick="encryptAndShare()">Encrypt and Share</button>
+        <div id="shareLink" style="display: none;"></div>
+        <input type="password" id="decryptPassword" placeholder="Enter password to decrypt">
+        <button onclick="decryptMessage()">Decrypt Message</button>
+        <div id="decryptedMessage" style="display: none;"></div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <script>
+        const card = document.getElementById('card');
+        const customMessage = document.getElementById('customMessage');
+        const messageInput = document.getElementById('messageInput');
+        const password = document.getElementById('password');
+        const shareLinkDiv = document.getElementById('shareLink');
+        const decryptPassword = document.getElementById('decryptPassword');
+        const decryptedMessageDiv = document.getElementById('decryptedMessage');
+
+        function encryptAndShare() {
+            const message = messageInput.value;
+            const key = password.value;
+            if (!message || !key) {
+                alert('Please enter both a message and a password.');
+                return;
+            }
+            const encrypted = CryptoJS.AES.encrypt(message, key).toString();
+            const shareUrl = `${window.location.href.split('?')[0]}?msg=${encodeURIComponent(encrypted)}`;
+            shareLinkDiv.textContent = `Share this link: ${shareUrl}`;
+            shareLinkDiv.style.display = 'block';
+            customMessage.textContent = 'Message encrypted and ready to share!';
+        }
+
+        function decryptMessage() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const encryptedMsg = urlParams.get('msg');
+            const key = decryptPassword.value;
+            if (!encryptedMsg || !key) {
+                alert('No encrypted message found or no password entered.');
+                return;
+            }
+            try {
+                const decrypted = CryptoJS.AES.decrypt(decryptedMsg, key).toString(CryptoJS.enc.Utf8);
+                if (decrypted) {
+                    decryptedMessageDiv.textContent = `Decrypted message: ${decrypted}`;
+                    decryptedMessageDiv.style.display = 'block';
+                    customMessage.textContent = decrypted;
+                } else {
+                    alert('Failed to decrypt. Please check your password.');
+                }
+            } catch (error) {
+                alert('Decryption failed. Please check your password.');
+            }
+        }
+
+        // Check for encrypted message in URL
+        window.onload = function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const encryptedMsg = urlParams.get('msg');
+            if (encryptedMsg) {
+                customMessage.textContent = 'Encrypted message received. Enter password to decrypt.';
+            }
+        };
+    </script>
+</body>
+</html>
