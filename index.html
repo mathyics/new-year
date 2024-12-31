@@ -3,13 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Secure New Year Greeting Card</title>
+    <title>Magical New Year Greeting Card</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
     <style>
         :root {
-            --primary-color: #2c3e50;
-            --accent-color: #e74c3c;
-            --gradient-start: #3498db;
-            --gradient-end: #2ecc71;
+            --primary-color: #1a1a2e;
+            --accent-color: #ff2e63;
+            --gradient-start: #4c0ffb;
+            --gradient-end: #ff2e63;
+            --card-bg: linear-gradient(135deg, #ff6b6b, #feca57);
+            --button-gradient: linear-gradient(45deg, #4c0ffb, #ff2e63);
         }
 
         * {
@@ -19,92 +23,139 @@
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Poppins', sans-serif;
             min-height: 100vh;
-            background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
+            background: radial-gradient(ellipse at bottom, #1b2735 0%, #090a0f 100%);
+            padding: 20px;
+            position: relative;
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+
+        .page-wrapper {
             display: flex;
             justify-content: center;
-            align-items: center;
-            padding: 20px;
+            align-items: flex-start;
+            min-height: 100vh;
+            padding: 40px 0;
+        }
+
+        #fireworksCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
         }
 
         .container {
-            background: rgba(255, 255, 255, 0.95);
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
             border-radius: 20px;
             padding: 30px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            border: 1px solid rgba(255, 255, 255, 0.18);
             width: 90%;
             max-width: 600px;
             position: relative;
-            z-index: 1;
+            z-index: 2;
+            margin: 40px auto;
         }
 
         .card {
-            background: linear-gradient(135deg, #ff6b6b, #ff8e53);
+            background: var(--card-bg);
             border-radius: 15px;
             padding: 30px;
             margin: 20px 0;
             color: white;
             text-align: center;
-            transition: transform 0.3s ease;
-            cursor: pointer;
             position: relative;
             overflow: hidden;
+            animation: cardFloat 3s ease-in-out infinite;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
         }
 
-        .card:hover {
-            transform: translateY(-5px);
+        .message-input-container {
+            position: relative;
+            margin-bottom: 10px;
         }
 
-        .card::before {
-            content: '';
+        .emoji-trigger {
+            background: var(--button-gradient);
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
             position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 60%);
-            transform: rotate(45deg);
-            transition: all 0.3s ease;
+            right: 10px;
+            top: 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            transition: transform 0.3s ease;
+            z-index: 2;
         }
 
-        .card:hover::before {
-            transform: rotate(45deg) translate(50%, 50%);
-        }
-
-        .card h1 {
-            font-size: 2.5em;
-            margin-bottom: 15px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
-        }
-
-        .form-group {
-            margin: 20px 0;
-        }
-
-        textarea, input {
-            width: 100%;
-            padding: 15px;
-            margin: 10px 0;
-            border: 2px solid #ddd;
+        .emoji-picker {
+            display: none;
+            position: absolute;
+            right: 10px;
+            top: 60px;
+            background: rgba(255, 255, 255, 0.95);
             border-radius: 10px;
-            font-size: 16px;
-            transition: all 0.3s ease;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+            padding: 10px;
+            z-index: 1000;
+            max-height: 300px;
+            width: 300px;
+            overflow-y: auto;
         }
 
-        textarea:focus, input:focus {
-            border-color: var(--gradient-start);
-            outline: none;
-            box-shadow: 0 0 10px rgba(52, 152, 219, 0.2);
+        .emoji-picker.active {
+            display: block;
         }
 
-        textarea {
-            height: 120px;
-            resize: vertical;
+        .emoji-category {
+            margin-bottom: 10px;
+            padding: 30px;
+            width: 70vh;
+            background: rgba(0, 0, 0, 0.05);
+            border-radius: 5px;
+        }
+
+        .emoji-category-title {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .emoji-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 5px;
+        }
+
+        .emoji-btn {
+            font-size: 1.5em;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 5px;
+            transition: transform 0.2s;
+        }
+
+        .emoji-btn:hover {
+            transform: scale(1.2);
+            background: rgba(0, 0, 0, 0.1);
         }
 
         .glow-button {
-            background: linear-gradient(45deg, var(--gradient-start), var(--gradient-end));
+            background: var(--button-gradient);
             color: white;
             border: none;
             padding: 15px 30px;
@@ -114,40 +165,38 @@
             transition: all 0.3s ease;
             width: 100%;
             text-transform: uppercase;
-            letter-spacing: 1px;
-            font-weight: bold;
+            letter-spacing: 2px;
+            font-weight: 600;
+            margin: 10px 0;
         }
 
-        .glow-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(46, 204, 113, 0.3);
+        textarea, input {
+            width: 100%;
+            padding: 15px;
+            margin: 10px 0;
+            border: 2px solid rgba(255,255,255,0.1);
+            border-radius: 10px;
+            font-size: 16px;
+            background: rgba(255,255,255,0.05);
+            color: white;
+            transition: all 0.3s ease;
+        }
+
+        textarea {
+            min-height: 100px;
+            resize: vertical;
         }
 
         .share-link {
             display: none;
             margin: 20px 0;
-            padding: 15px;
-            background: #f8f9fa;
+            padding: 20px;
+            background: rgba(255,255,255,0.05);
             border-radius: 10px;
             word-break: break-all;
-            border: 2px dashed var(--gradient-start);
-        }
-
-        .fireworks-container {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 999;
-        }
-
-        .firework {
-            position: absolute;
-            width: 5px;
-            height: 5px;
-            border-radius: 50%;
+            color: white;
+            border: 2px solid var(--accent-color);
+            animation: borderGlow 2s infinite alternate;
         }
 
         .message-overlay {
@@ -164,177 +213,249 @@
         }
 
         .message-content {
-            background: white;
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
             padding: 40px;
             border-radius: 20px;
             text-align: center;
+            color: white;
             max-width: 80%;
-            animation: popIn 0.5s ease-out;
+            animation: messageIn 0.5s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        @keyframes popIn {
-            0% { transform: scale(0); opacity: 0; }
-            80% { transform: scale(1.1); opacity: 0.8; }
-            100% { transform: scale(1); opacity: 1; }
+        @keyframes cardFloat {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
         }
 
-        @keyframes explode {
-            0% { transform: scale(1); opacity: 1; }
-            100% { transform: scale(20); opacity: 0; }
+        @keyframes glow {
+            from { text-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 15px var(--accent-color); }
+            to { text-shadow: 0 0 10px #fff, 0 0 20px #fff, 0 0 30px var(--accent-color); }
         }
 
-        @keyframes shoot {
-            0% { transform: translateY(100vh); }
-            100% { transform: translateY(15vh); }
+        @keyframes borderGlow {
+            from { border-color: var(--gradient-start); }
+            to { border-color: var(--gradient-end); }
         }
 
-        @media (max-width: 768px) {
-            .container { padding: 20px; }
-            .card h1 { font-size: 2em; }
-            .glow-button { padding: 12px 20px; font-size: 14px; }
-            .message-content { padding: 20px; }
+        @keyframes messageIn {
+            0% { transform: scale(0) rotate(-10deg); opacity: 0; }
+            80% { transform: scale(1.1) rotate(5deg); opacity: 0.8; }
+            100% { transform: scale(1) rotate(0); opacity: 1; }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="card" id="card">
-            <h1>Happy New Year!</h1>
-            <p id="customMessage">Your encrypted message will appear here</p>
-        </div>
-        <div class="form-group">
-            <textarea id="messageInput" placeholder="Enter your New Year's message"></textarea>
-            <input type="password" id="password" placeholder="Enter a password for encryption">
-            <button onclick="encryptAndShare()" class="glow-button">Encrypt and Share</button>
-        </div>
-        <div id="shareLink" class="share-link"></div>
-        <div class="form-group">
-            <input type="password" id="decryptPassword" placeholder="Enter password to decrypt">
-            <button onclick="decryptMessage()" class="glow-button">Decrypt Message</button>
+    <canvas id="fireworksCanvas"></canvas>
+    <div class="page-wrapper">
+        <div class="container">
+            <div class="card">
+                <h1>🎉 Happy New Year! 🎊</h1>
+                <br>
+                <p id="customMessage">Your encrypted message will appear here</p>
+            </div>
+            <div class="form-group">
+                <div class="message-input-container">
+                    <button id="emojiTrigger" class="emoji-trigger">😊</button>
+                    <div id="emojiPicker" class="emoji-picker"></div>
+                    <textarea id="messageInput" placeholder="Enter your New Year's message"></textarea>
+                </div>
+                <input type="password" id="password" placeholder="Enter a password for encryption">
+                <button onclick="encryptAndShare()" class="glow-button">Encrypt and Share</button>
+            </div>
+            <div id="shareLink" class="share-link"></div>
+            <div class="form-group">
+                <input type="password" id="decryptPassword" placeholder="Enter password to decrypt">
+                <button onclick="decryptMessage()" class="glow-button">Decrypt Message</button>
+            </div>
         </div>
     </div>
 
-    <div class="fireworks-container" id="fireworks"></div>
     <div class="message-overlay" id="messageOverlay">
         <div class="message-content">
-            <h2>🎉 Happy New Year! 🎉</h2>
+            <h2>🎉 Happy New Year! 🎊</h2>
             <p id="overlayMessage"></p>
         </div>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
     <script>
-        // Encryption utility class
-        class MessageEncryption {
-            static encrypt(message, key) {
-                if (!message || !key) throw new Error('Message and key are required');
-                return CryptoJS.AES.encrypt(message, key).toString();
+        class Fireworks {
+            constructor(canvas) {
+                this.canvas = canvas;
+                this.ctx = canvas.getContext('2d');
+                this.particles = [];
+                this.resizeCanvas();
+                this.bindEvents();
             }
 
-            static decrypt(encryptedMessage, key) {
-                if (!encryptedMessage || !key) throw new Error('Encrypted message and key are required');
-                try {
-                    const bytes = CryptoJS.AES.decrypt(encryptedMessage, key);
-                    const decrypted = bytes.toString(CryptoJS.enc.Utf8);
-                    if (!decrypted) throw new Error('Decryption failed');
-                    return decrypted;
-                } catch (error) {
-                    throw new Error('Invalid password');
-                }
+            resizeCanvas() {
+                this.canvas.width = window.innerWidth;
+                this.canvas.height = window.innerHeight;
             }
-        }
 
-        // Fireworks animation class
-        class Firework {
-            constructor(container) {
-                this.container = container;
+            bindEvents() {
+                window.addEventListener('resize', () => this.resizeCanvas());
+            }
+
+            createParticle(x, y, color) {
+                return {
+                    x,
+                    y,
+                    color,
+                    velocity: {
+                        x: (Math.random() - 0.5) * 8,
+                        y: (Math.random() - 0.5) * 8
+                    },
+                    alpha: 1,
+                    life: Math.random() * 150 + 50
+                };
             }
 
             launch() {
-                const firework = document.createElement('div');
-                firework.className = 'firework';
+                const colors = ['#ff0000', '#ffd700', '#ff69b4', '#00ff00', '#4169e1', '#ff4500'];
+                const x = Math.random() * this.canvas.width;
+                const y = this.canvas.height;
+                const color = colors[Math.floor(Math.random() * colors.length)];
                 
-                const x = Math.random() * window.innerWidth;
-                const hue = Math.random() * 360;
-                
-                firework.style.left = `${x}px`;
-                firework.style.backgroundColor = `hsl(${hue}, 100%, 50%)`;
-                firework.style.animation = `shoot 1s ease-out forwards`;
-                
-                this.container.appendChild(firework);
-                
-                setTimeout(() => {
-                    this.explode(firework, hue);
-                    firework.remove();
-                }, 1000);
+                for (let i = 0; i < 100; i++) {
+                    this.particles.push(this.createParticle(x, y, color));
+                }
             }
 
-            explode(firework, hue) {
-                const particles = 30;
-                const rect = firework.getBoundingClientRect();
-                
-                for (let i = 0; i < particles; i++) {
-                    const particle = document.createElement('div');
-                    particle.className = 'firework';
-                    particle.style.left = `${rect.left}px`;
-                    particle.style.top = `${rect.top}px`;
-                    particle.style.backgroundColor = `hsl(${hue}, 100%, 50%)`;
-                    particle.style.animation = 'explode 1s ease-out forwards';
-                    
-                    const angle = (i * 360) / particles;
-                    const velocity = 1;
-                    particle.style.transform = `rotate(${angle}deg) translate(${velocity}px)`;
-                    
-                    this.container.appendChild(particle);
-                    
-                    setTimeout(() => particle.remove(), 1000);
-                }
+            animate() {
+                this.ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+                this.particles.forEach((particle, index) => {
+                    particle.velocity.y += 0.1;
+                    particle.x += particle.velocity.x;
+                    particle.y += particle.velocity.y;
+                    particle.alpha -= 0.01;
+
+                    this.ctx.beginPath();
+                    this.ctx.arc(particle.x, particle.y, 2, 0, Math.PI * 2);
+                    this.ctx.fillStyle = particle.color.replace(')', `, ${particle.alpha})`);
+                    this.ctx.fill();
+
+                    if (particle.alpha <= 0) {
+                        this.particles.splice(index, 1);
+                    }
+                });
+
+                requestAnimationFrame(() => this.animate());
+            }
+
+            start() {
+                this.animate();
+                setInterval(() => this.launch(), 2000);
             }
         }
 
-        // Main application logic
-        document.addEventListener('DOMContentLoaded', () => {
-            const fireworksContainer = document.getElementById('fireworks');
-            const fireworks = new Firework(fireworksContainer);
-            const messageInput = document.getElementById('messageInput');
-            const password = document.getElementById('password');
-            const shareLinkDiv = document.getElementById('shareLink');
-            const decryptPassword = document.getElementById('decryptPassword');
-            const customMessage = document.getElementById('customMessage');
-
-            function showDecryptedMessage(message) {
-                const overlay = document.getElementById('messageOverlay');
-                const overlayMessage = document.getElementById('overlayMessage');
-                
-                overlayMessage.textContent = message;
-                overlay.style.display = 'flex';
-                
-                const fireworksInterval = setInterval(() => {
-                    fireworks.launch();
-                }, 300);
-
-                setTimeout(() => {
-                    clearInterval(fireworksInterval);
-                    overlay.style.display = 'none';
-                    customMessage.textContent = message;
-                }, 5000);
+        class EmojiPicker {
+            constructor(targetInput) {
+                this.targetInput = targetInput;
+                this.categories = {
+                    'Celebrations': ['🎉', '🎊', '✨', '🎆', '🎇', '🎈', '🎅', '🎄'],
+                    'Love & Hearts': ['❤️', '💖', '💝', '💕', '💓', '💗', '💘', '💞'],
+                    'Party & Fun': ['🥂', '🍾', '🎪', '🎭', '🎨', '🎯', '🎲', '🎮'],
+                    'Music': ['🎼', '🎸', '🎹', '🎺', '🎻', '🥁', '🎤', '🎧']
+                };
+                this.setupPicker();
             }
+
+            setupPicker() {
+                const trigger = document.getElementById('emojiTrigger');
+                const picker = document.getElementById('emojiPicker');
+
+                trigger.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.togglePicker();
+                });
+
+                document.addEventListener('click', (e) => {
+                    if (!picker.contains(e.target) && e.target !== trigger) {
+                        this.hidePicker();
+                    }
+                });
+
+                this.createCategories();
+            }
+
+            createCategories() {
+                const picker = document.getElementById('emojiPicker');
+                picker.innerHTML = '';
+
+                Object.entries(this.categories).forEach(([category, emojis]) => {
+                    const categoryDiv = document.createElement('div');
+                    categoryDiv.className = 'emoji-category';
+                    
+                    const titleDiv = document.createElement('div');
+                    titleDiv.className = 'emoji-category-title';
+                    titleDiv.textContent = category;
+                    categoryDiv.appendChild(titleDiv);
+
+                    const emojiGrid = document.createElement('div');
+                    emojiGrid.className = 'emoji-grid';
+
+                    emojis.forEach(emoji => {
+                        const button = document.createElement('button');
+                        button.className = 'emoji-btn';
+                        button.textContent = emoji;
+                        button.onclick = (e) => {
+                            e.stopPropagation();
+                            this.addEmoji(emoji);
+                        };
+                        emojiGrid.appendChild(button);
+                    });
+
+                    categoryDiv.appendChild(emojiGrid);
+                    picker.appendChild(categoryDiv);
+                });
+            }
+
+            togglePicker() {
+                const picker = document.getElementById('emojiPicker');
+                picker.classList.toggle('active');
+            }
+
+            hidePicker() {
+                const picker = document.getElementById('emojiPicker');
+                picker.classList.remove('active');
+            }
+
+            addEmoji(emoji) {
+                const cursorPos = this.targetInput.selectionStart;
+                const text = this.targetInput.value;
+                this.targetInput.value = text.slice(0, cursorPos) + emoji + text.slice(cursorPos);
+                this.targetInput.focus();
+                this.targetInput.selectionStart = cursorPos + emoji.length;
+                this.targetInput.selectionEnd = cursorPos + emoji.length;
+            }
+        }
+
+        // Initialize everything when the DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            const fireworks = new Fireworks(document.getElementById('fireworksCanvas'));
+            const emojiPicker = new EmojiPicker(document.getElementById('messageInput'));
+            
+            fireworks.start();
 
             window.encryptAndShare = function() {
                 try {
-                    const message = messageInput.value;
-                    const key = password.value;
+                    const message = document.getElementById('messageInput').value;
+                    const key = document.getElementById('password').value;
                     
                     if (!message || !key) {
                         alert('Please enter both a message and a password.');
                         return;
                     }
                     
-                    const encrypted = MessageEncryption.encrypt(message, key);
+                    const encrypted = CryptoJS.AES.encrypt(message, key).toString();
                     const shareUrl = `${window.location.href.split('?')[0]}?msg=${encodeURIComponent(encrypted)}`;
+                    const shareLinkDiv = document.getElementById('shareLink');
                     shareLinkDiv.textContent = `Share this link: ${shareUrl}`;
                     shareLinkDiv.style.display = 'block';
-                    customMessage.textContent = 'Message encrypted and ready to share!';
+                    document.getElementById('customMessage').textContent = 'Message encrypted and ready to share!';
                 } catch (error) {
                     alert(error.message);
                 }
@@ -344,25 +465,48 @@
                 try {
                     const urlParams = new URLSearchParams(window.location.search);
                     const encryptedMsg = urlParams.get('msg');
-                    const key = decryptPassword.value;
+                    const key = document.getElementById('decryptPassword').value;
                     
                     if (!encryptedMsg || !key) {
                         alert('No encrypted message found or no password entered.');
                         return;
                     }
                     
-                    const decrypted = MessageEncryption.decrypt(encryptedMsg, key);
+                    const bytes = CryptoJS.AES.decrypt(encryptedMsg, key);
+                    const decrypted = bytes.toString(CryptoJS.enc.Utf8);
+                    
+                    if (!decrypted) {
+                        throw new Error('Invalid password');
+                    }
+                    
                     showDecryptedMessage(decrypted);
                 } catch (error) {
                     alert(error.message);
                 }
             };
 
+            function showDecryptedMessage(message) {
+                const overlayMessage = document.getElementById('overlayMessage');
+                const messageOverlay = document.getElementById('messageOverlay');
+                
+                overlayMessage.textContent = message;
+                messageOverlay.style.display = 'flex';
+                
+                const fireworksInterval = setInterval(() => {
+                    fireworks.launch();
+                }, 300);
+
+                setTimeout(() => {
+                    clearInterval(fireworksInterval);
+                    messageOverlay.style.display = 'none';
+                    document.getElementById('customMessage').textContent = message;
+                }, 5000);
+            }
+
             // Check for encrypted message in URL
             const urlParams = new URLSearchParams(window.location.search);
-            const encryptedMsg = urlParams.get('msg');
-            if (encryptedMsg) {
-                customMessage.textContent = 'Encrypted message received. Enter password to decrypt.';
+            if (urlParams.get('msg')) {
+                document.getElementById('customMessage').textContent = 'Encrypted message received. Enter password to decrypt.';
             }
         });
     </script>
